@@ -21,6 +21,7 @@ import org.jfree.data.category.DefaultCategoryDataset;
 public class BourseSimulationGUI extends JFrame {
 
     private JLabel soldeLabel;
+    private JLabel totalGainPerteLabel;
     private JButton simulerButton;
     private JButton investirButton;
     private JButton resetButton;
@@ -47,9 +48,16 @@ public class BourseSimulationGUI extends JFrame {
         setLayout(new BorderLayout());
 
         // Section du solde utilisateur
+        JPanel topPanel = new JPanel(new GridLayout(2, 1));
         soldeLabel = new JLabel("Solde: " + portefeuille.getSolde() + " €");
         soldeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        add(soldeLabel, BorderLayout.NORTH);
+        topPanel.add(soldeLabel);
+
+        totalGainPerteLabel = new JLabel("Total Gains/Pertes: 0.0 €");
+        totalGainPerteLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        topPanel.add(totalGainPerteLabel);
+
+        add(topPanel, BorderLayout.NORTH);
 
         // Tableau des produits avec modèle de données
         String[] columnNames = {"Produit", "Valeur actuelle (€)"};
@@ -167,6 +175,8 @@ public class BourseSimulationGUI extends JFrame {
 
     private void simulerTour() {
         int tour = dataset.getColumnCount(); // Nombre actuel de tours
+        double totalGainsOuPertes = 0.0;
+
         for (Produit produit : produits) {
             double ancienneValeur = produit.getValeurActuelle();
             produit.simulerVariation();
@@ -179,6 +189,7 @@ public class BourseSimulationGUI extends JFrame {
                     double prixAchat = (double) historiqueModel.getValueAt(i, 2);
                     double gainsOuPertes = (nouvelleValeur - prixAchat) * quantite;
                     historiqueModel.setValueAt(gainsOuPertes, i, 3);
+                    totalGainsOuPertes += gainsOuPertes;
                 }
             }
 
@@ -194,6 +205,9 @@ public class BourseSimulationGUI extends JFrame {
                 produitsTable.setValueAt(nouvelleValeur, produits.indexOf(produit), 1);
             }
         }
+
+        // Mettre à jour le total des gains/pertes
+        totalGainPerteLabel.setText("Total Gains/Pertes: " + totalGainsOuPertes + " €");
         miseAJourTableau();
         soldeLabel.setText("Solde: " + portefeuille.getSolde() + " €");
     }
@@ -222,6 +236,7 @@ public class BourseSimulationGUI extends JFrame {
 
         // Réinitialiser le solde affiché
         soldeLabel.setText("Solde: " + portefeuille.getSolde() + " €");
+        totalGainPerteLabel.setText("Total Gains/Pertes: 0.0 €");
     }
 
     private Produit trouverProduit(String nom) {
