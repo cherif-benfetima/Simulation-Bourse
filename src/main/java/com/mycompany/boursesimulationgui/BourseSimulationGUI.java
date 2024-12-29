@@ -70,8 +70,8 @@ public class BourseSimulationGUI extends JFrame {
         produitsTable.getColumnModel().getColumn(0).setPreferredWidth(200);
         produitsTable.getColumnModel().getColumn(1).setPreferredWidth(150);
 
-        // Historique des gains/pertes
-        String[] historiqueColumns = {"Produit", "Gains/Pertes (€)"};
+        // Historique des gains/pertes par investissement
+        String[] historiqueColumns = {"Produit", "Quantité d'Actions", "Prix d'Achat (€)", "Gains/Pertes (€)"};
         historiqueModel = new DefaultTableModel(historiqueColumns, 0);
         historiqueTable = new JTable(historiqueModel);
 
@@ -142,18 +142,26 @@ public class BourseSimulationGUI extends JFrame {
 
     private void investir() {
         String produitNom = JOptionPane.showInputDialog("Entrez le nom du produit :");
-        String montantStr = JOptionPane.showInputDialog("Montant à investir :");
+        String montantStr = JOptionPane.showInputDialog("Montant à investir (€) :");
         try {
             double montant = Double.parseDouble(montantStr);
             Produit produit = trouverProduit(produitNom);
-            if (produit != null && portefeuille.investir(produit, montant)) {
-                JOptionPane.showMessageDialog(this, "Investissement réussi !");
-                miseAJourTableau();
+            if (produit != null) {
+                double prixAchat = produit.getValeurActuelle();
+                double quantite = montant / prixAchat;
+                if (quantite > 0 && portefeuille.investir(produit, montant)) {
+                    // Ajouter l'investissement à l'historique
+                    historiqueModel.addRow(new Object[]{produitNom, quantite, prixAchat, 0.0});
+                    JOptionPane.showMessageDialog(this, "Investissement réussi !");
+                    miseAJourTableau();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Fonds insuffisants ou montant trop faible pour un investissement.");
+                }
             } else {
-                JOptionPane.showMessageDialog(this, "Investissement échoué. Vérifiez vos entrées.");
+                JOptionPane.showMessageDialog(this, "Produit introuvable.");
             }
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Montant invalide.");
+            JOptionPane.showMessageDialog(this, "Entrée invalide. Veuillez entrer un montant valide.");
         }
     }
 
@@ -163,21 +171,15 @@ public class BourseSimulationGUI extends JFrame {
             double ancienneValeur = produit.getValeurActuelle();
             produit.simulerVariation();
             double nouvelleValeur = produit.getValeurActuelle();
-            double gainOuPerte = nouvelleValeur - ancienneValeur;
 
-            // Ajouter au tableau d'historique
-            boolean produitDejaAjoute = false;
+            // Mettre à jour les gains/pertes dans l'historique
             for (int i = 0; i < historiqueModel.getRowCount(); i++) {
                 if (historiqueModel.getValueAt(i, 0).equals(produit.getNom())) {
-                    double cumul = (double) historiqueModel.getValueAt(i, 1);
-                    historiqueModel.setValueAt(cumul + gainOuPerte, i, 1);
-                    produitDejaAjoute = true;
-                    break;
+                    double quantite = (double) historiqueModel.getValueAt(i, 1);
+                    double prixAchat = (double) historiqueModel.getValueAt(i, 2);
+                    double gainsOuPertes = (nouvelleValeur - prixAchat) * quantite;
+                    historiqueModel.setValueAt(gainsOuPertes, i, 3);
                 }
-            }
-
-            if (!produitDejaAjoute) {
-                historiqueModel.addRow(new Object[]{produit.getNom(), gainOuPerte});
             }
 
             // Ajouter au graphique
