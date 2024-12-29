@@ -7,12 +7,14 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.title.LegendTitle;
+import org.jfree.chart.ui.HorizontalAlignment;
+import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 // Classe principale pour la GUI
@@ -21,6 +23,7 @@ public class BourseSimulationGUI extends JFrame {
     private JLabel soldeLabel;
     private JButton simulerButton;
     private JButton investirButton;
+    private JButton resetButton;
     private JTable produitsTable;
     private JTable historiqueTable;
     private Portefeuille portefeuille;
@@ -81,8 +84,18 @@ public class BourseSimulationGUI extends JFrame {
                 "Évolution des valeurs des produits",
                 "Tours",
                 "Valeur (€)",
-                dataset
+                dataset,
+                PlotOrientation.VERTICAL,
+                true,
+                true,
+                false
         );
+
+        // Positionner la légende en bas
+        LegendTitle legend = chart.getLegend();
+        legend.setPosition(RectangleEdge.BOTTOM);
+        legend.setHorizontalAlignment(HorizontalAlignment.CENTER);
+
         ChartPanel chartPanel = new ChartPanel(chart);
 
         // Mise en page
@@ -98,8 +111,10 @@ public class BourseSimulationGUI extends JFrame {
         JPanel buttonPanel = new JPanel();
         investirButton = new JButton("Investir");
         simulerButton = new JButton("Simuler");
+        resetButton = new JButton("Réinitialiser");
         buttonPanel.add(investirButton);
         buttonPanel.add(simulerButton);
+        buttonPanel.add(resetButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
         // Actions des boutons
@@ -114,6 +129,13 @@ public class BourseSimulationGUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 simulerTour();
+            }
+        });
+
+        resetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                reinitialiserSimulation();
             }
         });
     }
@@ -171,6 +193,32 @@ public class BourseSimulationGUI extends JFrame {
             }
         }
         miseAJourTableau();
+        soldeLabel.setText("Solde: " + portefeuille.getSolde() + " €");
+    }
+
+    private void reinitialiserSimulation() {
+        // Réinitialiser les produits et le portefeuille
+        portefeuille = new Portefeuille(1000.0);
+        produits.clear();
+        produits.add(new Produit("Action A", 100));
+        produits.add(new Produit("Action B", 50));
+        produits.add(new Produit("Produit C", 200));
+
+        // Réinitialiser les tableaux
+        tableModel.setRowCount(0);
+        historiqueModel.setRowCount(0);
+
+        for (Produit produit : produits) {
+            tableModel.addRow(new Object[]{produit.getNom(), produit.getValeurActuelle()});
+        }
+
+        // Réinitialiser le dataset pour le graphique
+        dataset.clear();
+        for (Produit produit : produits) {
+            dataset.addValue(produit.getValeurActuelle(), produit.getNom(), "Tour 0");
+        }
+
+        // Réinitialiser le solde affiché
         soldeLabel.setText("Solde: " + portefeuille.getSolde() + " €");
     }
 
