@@ -24,6 +24,7 @@ public class BourseSimulationGUI extends JFrame {
     private JLabel totalGainPerteLabel;
     private JButton simulerButton;
     private JButton investirButton;
+    private JButton vendreButton;
     private JButton resetButton;
     private JTable produitsTable;
     private JTable historiqueTable;
@@ -118,9 +119,11 @@ public class BourseSimulationGUI extends JFrame {
         // Boutons
         JPanel buttonPanel = new JPanel();
         investirButton = new JButton("Investir");
+        vendreButton = new JButton("Vendre");
         simulerButton = new JButton("Simuler");
         resetButton = new JButton("Réinitialiser");
         buttonPanel.add(investirButton);
+        buttonPanel.add(vendreButton);
         buttonPanel.add(simulerButton);
         buttonPanel.add(resetButton);
         add(buttonPanel, BorderLayout.SOUTH);
@@ -130,6 +133,13 @@ public class BourseSimulationGUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 investir();
+            }
+        });
+
+        vendreButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                vendre();
             }
         });
 
@@ -170,6 +180,46 @@ public class BourseSimulationGUI extends JFrame {
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Entrée invalide. Veuillez entrer un montant valide.");
+        }
+    }
+
+    private void vendre() {
+        String produitNom = JOptionPane.showInputDialog("Entrez le nom du produit à vendre :");
+        String quantiteStr = JOptionPane.showInputDialog("Quantité à vendre :");
+        try {
+            double quantite = Double.parseDouble(quantiteStr);
+            Produit produit = trouverProduit(produitNom);
+            if (produit != null) {
+                for (int i = 0; i < historiqueModel.getRowCount(); i++) {
+                    if (historiqueModel.getValueAt(i, 0).equals(produitNom)) {
+                        double quantitePossedee = (double) historiqueModel.getValueAt(i, 1);
+                        if (quantite <= quantitePossedee) {
+                            double prixAchat = (double) historiqueModel.getValueAt(i, 2);
+                            double prixVente = produit.getValeurActuelle();
+                            double gainsOuPertes = (prixVente - prixAchat) * quantite;
+                            portefeuille.ajouterSolde(prixVente * quantite);
+
+                            // Mettre à jour la quantité restante
+                            historiqueModel.setValueAt(quantitePossedee - quantite, i, 1);
+                            if ((double) historiqueModel.getValueAt(i, 1) == 0) {
+                                historiqueModel.removeRow(i);
+                            }
+
+                            JOptionPane.showMessageDialog(this, "Vente réussie ! Gains/Pertes: " + gainsOuPertes + " €");
+                            miseAJourTableau();
+                            return;
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Quantité insuffisante pour la vente.");
+                            return;
+                        }
+                    }
+                }
+                JOptionPane.showMessageDialog(this, "Aucun investissement trouvé pour ce produit.");
+            } else {
+                JOptionPane.showMessageDialog(this, "Produit introuvable.");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Entrée invalide. Veuillez entrer une quantité valide.");
         }
     }
 
@@ -308,6 +358,10 @@ class Portefeuille {
             return true;
         }
         return false;
+    }
+
+    public void ajouterSolde(double montant) {
+        solde += montant;
     }
 }
 
