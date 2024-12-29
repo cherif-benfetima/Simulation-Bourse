@@ -7,7 +7,13 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.category.DefaultCategoryDataset;
 
 // Classe principale pour la GUI
 public class BourseSimulationGUI extends JFrame {
@@ -21,6 +27,7 @@ public class BourseSimulationGUI extends JFrame {
     private ArrayList<Produit> produits;
     private DefaultTableModel tableModel;
     private DefaultTableModel historiqueModel;
+    private DefaultCategoryDataset dataset;
 
     public BourseSimulationGUI() {
         // Initialisation des produits et du portefeuille
@@ -65,10 +72,27 @@ public class BourseSimulationGUI extends JFrame {
         historiqueModel = new DefaultTableModel(historiqueColumns, 0);
         historiqueTable = new JTable(historiqueModel);
 
+        // Dataset pour le graphique
+        dataset = new DefaultCategoryDataset();
+        for (Produit produit : produits) {
+            dataset.addValue(produit.getValeurActuelle(), produit.getNom(), "Tour 0");
+        }
+        JFreeChart chart = ChartFactory.createLineChart(
+                "Évolution des valeurs des produits",
+                "Tours",
+                "Valeur (€)",
+                dataset
+        );
+        ChartPanel chartPanel = new ChartPanel(chart);
+
         // Mise en page
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(produitsTable), new JScrollPane(historiqueTable));
         splitPane.setDividerLocation(300);
-        add(splitPane, BorderLayout.CENTER);
+
+        JSplitPane mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitPane, chartPanel);
+        mainSplitPane.setDividerLocation(500);
+
+        add(mainSplitPane, BorderLayout.CENTER);
 
         // Boutons
         JPanel buttonPanel = new JPanel();
@@ -112,6 +136,7 @@ public class BourseSimulationGUI extends JFrame {
     }
 
     private void simulerTour() {
+        int tour = dataset.getColumnCount(); // Nombre actuel de tours
         for (Produit produit : produits) {
             double ancienneValeur = produit.getValeurActuelle();
             produit.simulerVariation();
@@ -132,6 +157,9 @@ public class BourseSimulationGUI extends JFrame {
             if (!produitDejaAjoute) {
                 historiqueModel.addRow(new Object[]{produit.getNom(), gainOuPerte});
             }
+
+            // Ajouter au graphique
+            dataset.addValue(nouvelleValeur, produit.getNom(), "Tour " + tour);
 
             // Appliquer une couleur pour indiquer les variations
             if (nouvelleValeur > ancienneValeur) {
