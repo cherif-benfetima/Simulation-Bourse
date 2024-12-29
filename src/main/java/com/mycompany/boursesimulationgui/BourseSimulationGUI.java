@@ -1,6 +1,8 @@
 package com.mycompany.boursesimulationgui;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,10 +18,8 @@ public class BourseSimulationGUI extends JFrame {
     private JTable produitsTable;
     private Portefeuille portefeuille;
     private ArrayList<Produit> produits;
+    private DefaultTableModel tableModel;
 
-    /** hola zoli 
-     * @Bourse hoho 
-     */
     public BourseSimulationGUI() {
         // Initialisation des produits et du portefeuille
         portefeuille = new Portefeuille(1000.0); // Solde initial
@@ -36,16 +36,27 @@ public class BourseSimulationGUI extends JFrame {
 
         // Section du solde utilisateur
         soldeLabel = new JLabel("Solde: " + portefeuille.getSolde() + " €");
+        soldeLabel.setHorizontalAlignment(SwingConstants.CENTER);
         add(soldeLabel, BorderLayout.NORTH);
 
-        // Tableau des produits
+        // Tableau des produits avec modèle de données
         String[] columnNames = {"Produit", "Valeur actuelle (€)"};
-        Object[][] data = new Object[produits.size()][2];
-        for (int i = 0; i < produits.size(); i++) {
-            data[i][0] = produits.get(i).getNom();
-            data[i][1] = produits.get(i).getValeurActuelle();
+        tableModel = new DefaultTableModel(columnNames, 0);
+        produitsTable = new JTable(tableModel);
+
+        // Ajouter des données initiales au tableau
+        for (Produit produit : produits) {
+            tableModel.addRow(new Object[]{produit.getNom(), produit.getValeurActuelle()});
         }
-        produitsTable = new JTable(data, columnNames);
+
+        // Centrer les cellules et ajuster les colonnes
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        produitsTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+        produitsTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        produitsTable.setRowHeight(25);
+        produitsTable.getColumnModel().getColumn(0).setPreferredWidth(200);
+        produitsTable.getColumnModel().getColumn(1).setPreferredWidth(150);
         add(new JScrollPane(produitsTable), BorderLayout.CENTER);
 
         // Boutons
@@ -91,7 +102,18 @@ public class BourseSimulationGUI extends JFrame {
 
     private void simulerTour() {
         for (Produit produit : produits) {
+            double ancienneValeur = produit.getValeurActuelle();
             produit.simulerVariation();
+            double nouvelleValeur = produit.getValeurActuelle();
+
+            // Appliquer une couleur pour indiquer les variations
+            if (nouvelleValeur > ancienneValeur) {
+                produitsTable.setValueAt("<html><span style='color:green;'>" + nouvelleValeur + "</span></html>", produits.indexOf(produit), 1);
+            } else if (nouvelleValeur < ancienneValeur) {
+                produitsTable.setValueAt("<html><span style='color:red;'>" + nouvelleValeur + "</span></html>", produits.indexOf(produit), 1);
+            } else {
+                produitsTable.setValueAt(nouvelleValeur, produits.indexOf(produit), 1);
+            }
         }
         miseAJourTableau();
         soldeLabel.setText("Solde: " + portefeuille.getSolde() + " €");
