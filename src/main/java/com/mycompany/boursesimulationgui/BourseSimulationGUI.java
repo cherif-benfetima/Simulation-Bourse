@@ -16,9 +16,11 @@ public class BourseSimulationGUI extends JFrame {
     private JButton simulerButton;
     private JButton investirButton;
     private JTable produitsTable;
+    private JTable historiqueTable;
     private Portefeuille portefeuille;
     private ArrayList<Produit> produits;
     private DefaultTableModel tableModel;
+    private DefaultTableModel historiqueModel;
 
     public BourseSimulationGUI() {
         // Initialisation des produits et du portefeuille
@@ -30,7 +32,7 @@ public class BourseSimulationGUI extends JFrame {
 
         // Configuration de la fenêtre principale
         setTitle("Simulation Boursière");
-        setSize(600, 400);
+        setSize(800, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -57,7 +59,16 @@ public class BourseSimulationGUI extends JFrame {
         produitsTable.setRowHeight(25);
         produitsTable.getColumnModel().getColumn(0).setPreferredWidth(200);
         produitsTable.getColumnModel().getColumn(1).setPreferredWidth(150);
-        add(new JScrollPane(produitsTable), BorderLayout.CENTER);
+
+        // Historique des gains/pertes
+        String[] historiqueColumns = {"Produit", "Gains/Pertes (€)"};
+        historiqueModel = new DefaultTableModel(historiqueColumns, 0);
+        historiqueTable = new JTable(historiqueModel);
+
+        // Mise en page
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(produitsTable), new JScrollPane(historiqueTable));
+        splitPane.setDividerLocation(300);
+        add(splitPane, BorderLayout.CENTER);
 
         // Boutons
         JPanel buttonPanel = new JPanel();
@@ -105,6 +116,22 @@ public class BourseSimulationGUI extends JFrame {
             double ancienneValeur = produit.getValeurActuelle();
             produit.simulerVariation();
             double nouvelleValeur = produit.getValeurActuelle();
+            double gainOuPerte = nouvelleValeur - ancienneValeur;
+
+            // Ajouter au tableau d'historique
+            boolean produitDejaAjoute = false;
+            for (int i = 0; i < historiqueModel.getRowCount(); i++) {
+                if (historiqueModel.getValueAt(i, 0).equals(produit.getNom())) {
+                    double cumul = (double) historiqueModel.getValueAt(i, 1);
+                    historiqueModel.setValueAt(cumul + gainOuPerte, i, 1);
+                    produitDejaAjoute = true;
+                    break;
+                }
+            }
+
+            if (!produitDejaAjoute) {
+                historiqueModel.addRow(new Object[]{produit.getNom(), gainOuPerte});
+            }
 
             // Appliquer une couleur pour indiquer les variations
             if (nouvelleValeur > ancienneValeur) {
